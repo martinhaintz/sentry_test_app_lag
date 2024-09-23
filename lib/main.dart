@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final transaction = Sentry.startTransaction('startUnlimitedSpan()', 'task');
     return MaterialApp(
       navigatorKey: navigatorKey,
       navigatorObservers: [
