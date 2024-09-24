@@ -139,6 +139,16 @@ class Screen2 extends StatelessWidget {
                 },
                 child: const Text('Go back to MainScreen'),
               ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: 100,
+                  itemBuilder: (BuildContext context, int index) {
+                    return ListTile(
+                      title: Text(index.toString()),
+                    );
+                  },
+                ),
+              )
             ],
           ),
         ),
