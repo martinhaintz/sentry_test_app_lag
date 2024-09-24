@@ -87,7 +87,6 @@ class _MainScreenState extends State<MainScreen> {
       if (counter >= maxCounter) {
         counter = 0;
         timer.cancel();
-        sentrySpan.finish();
       }
     });
   }
@@ -105,6 +104,11 @@ class _MainScreenState extends State<MainScreen> {
                   startTimer();
                 },
                 child: Text("Start $maxCounter Frames")),
+            ElevatedButton(
+                onPressed: () {
+                  sentrySpan.finish();
+                },
+                child: Text("finish span and send")),
             ElevatedButton(
               onPressed: () {
                 context.read<NavigationBloc>().add(NavigateToScreen2());
