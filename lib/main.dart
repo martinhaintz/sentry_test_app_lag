@@ -33,8 +33,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    sentrySpan = Sentry.startTransaction(
-        '${DateTime.now()} startUnlimitedSpan()', 'task');
     return MaterialApp(
       navigatorKey: navigatorKey,
       navigatorObservers: [
@@ -78,6 +76,10 @@ class _MainScreenState extends State<MainScreen> {
   int maxCounter = 72 * 1000;
 
   void startTimer() {
+    sentrySpan = Sentry.startTransaction(
+        '${DateTime.now()} startUnlimitedSpan()', 'task');
+    frames = 0;
+    counter = 0;
     timer = Timer.periodic(const Duration(milliseconds: 1), (Timer timer) {
       setState(() {
         counter++; // This will update the UI every second.
@@ -85,7 +87,6 @@ class _MainScreenState extends State<MainScreen> {
       });
       sentrySpan.setData(frames.toString(), frames);
       if (counter >= maxCounter) {
-        counter = 0;
         timer.cancel();
       }
     });
@@ -105,16 +106,21 @@ class _MainScreenState extends State<MainScreen> {
                 },
                 child: Text("Start $maxCounter Frames")),
             ElevatedButton(
-                onPressed: () {
-                  sentrySpan.finish();
-                },
-                child: Text("finish span and send")),
-            ElevatedButton(
               onPressed: () {
                 context.read<NavigationBloc>().add(NavigateToScreen2());
               },
               child: const Text('Go to Screen 2'),
             ),
+            Expanded(child: SizedBox()),
+            ElevatedButton(
+                onPressed: () {
+                  sentrySpan.finish();
+                  setState(() {
+                    frames = 0;
+                    counter = 0;
+                  });
+                },
+                child: Text("finish span and send")),
           ],
         ),
       ),
