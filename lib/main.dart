@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'navigation_bloc.dart';
+
+int frames = 0;
+int counter = 0;
+late Timer timer;
+late ISentrySpan sentrySpan;
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -26,7 +33,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transaction = Sentry.startTransaction('startUnlimitedSpan()', 'task');
+    sentrySpan = Sentry.startTransaction(
+        '${DateTime.now()} startUnlimitedSpan()', 'task');
     return MaterialApp(
       navigatorKey: navigatorKey,
       navigatorObservers: [
@@ -48,12 +56,10 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<NavigationBloc, NavigationState>(
       builder: (context, state) {
-        if (state is Screen1State) {
-          return const Screen1();
+        if (state is MainScreenState) {
+          return const MainScreen();
         } else if (state is Screen2State) {
-          return Screen2();
-        } else if (state is Screen3State) {
-          return Screen3(text: state.text);
+          return const Screen2();
         }
         return Container();
       },
@@ -61,20 +67,51 @@ class Home extends StatelessWidget {
   }
 }
 
-// Screen 1
-class Screen1 extends StatelessWidget {
-  const Screen1({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int maxCounter = 72 * 1000;
+
+  void startTimer() {
+    timer = Timer.periodic(const Duration(milliseconds: 1), (Timer timer) {
+      setState(() {
+        counter++; // This will update the UI every second.
+        frames++;
+      });
+      sentrySpan.setData(frames.toString(), frames);
+      if (counter >= maxCounter) {
+        counter = 0;
+        timer.cancel();
+        sentrySpan.finish();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Screen 1')),
+      appBar: AppBar(title: const Text('MainScreen')),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            context.read<NavigationBloc>().add(NavigateToScreen2());
-          },
-          child: const Text('Go to Screen 2'),
+        child: Column(
+          children: [
+            Text("Frame: $frames"),
+            ElevatedButton(
+                onPressed: () {
+                  startTimer();
+                },
+                child: Text("Start $maxCounter Frames")),
+            ElevatedButton(
+              onPressed: () {
+                context.read<NavigationBloc>().add(NavigateToScreen2());
+              },
+              child: const Text('Go to Screen 2'),
+            ),
+          ],
         ),
       ),
     );
@@ -83,9 +120,7 @@ class Screen1 extends StatelessWidget {
 
 // Screen 2
 class Screen2 extends StatelessWidget {
-  final TextEditingController _controller = TextEditingController();
-
-  Screen2({super.key});
+  const Screen2({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -93,52 +128,19 @@ class Screen2 extends StatelessWidget {
       appBar: AppBar(title: const Text('Screen 2')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: const InputDecoration(labelText: 'Enter some text'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                context
-                    .read<NavigationBloc>()
-                    .add(NavigateToScreen3(_controller.text));
-              },
-              child: const Text('Go to Screen 3'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Screen 3
-class Screen3 extends StatelessWidget {
-  final String text;
-
-  const Screen3({super.key, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Screen 3')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('You entered: $text'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                context.read<NavigationBloc>().add(NavigateToScreen1());
-              },
-              child: const Text('Go back to Screen 1'),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Screen 2"),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<NavigationBloc>().add(NavigateToMainScreen());
+                },
+                child: const Text('Go back to MainScreen'),
+              ),
+            ],
+          ),
         ),
       ),
     );
